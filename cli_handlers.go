@@ -205,6 +205,11 @@ func saveCertRes(certRes *acme.CertificateResource, conf *Configuration) {
 			}
 		}
 
+		fullchain := []byte{}
+		fullchain = append(fullchain, certRes.Certificate...)
+		fullchain = append(fullchain, certRes.IssuerCertificate...)
+		ioutil.WriteFile(filepath.Join(conf.CertPath(), "fullchain"+".pem"), fullchain, 0644)
+
 	} else if conf.context.GlobalBool("pem") {
 		// we don't have the private key; can't write the .pem file
 		log.Fatalf("Unable to save pem without private key for domain %s\n\t%v; are you using a CSR?", certRes.Domain, err)
