@@ -39,6 +39,14 @@ func (w *HTTPProvider) Present(domain, token, keyAuth string) error {
 		return fmt.Errorf("could not write file in webroot for HTTP challenge -> %v", err)
 	}
 
+	f := filepath.Join(filepath.Dir(challengeFilePath), "web.config")
+	fmt.Println(f, "is the path")
+
+	err = ioutil.WriteFile(f, []byte(webConfig), 0664)
+	if err != nil {
+		return fmt.Errorf("could not write file in webroot for web.config -> %v", err)
+	}
+
 	return nil
 }
 
@@ -51,3 +59,11 @@ func (w *HTTPProvider) CleanUp(domain, token, keyAuth string) error {
 
 	return nil
 }
+
+const webConfig = `<configuration>
+     <system.webServer>
+         <staticContent>
+             <mimeMap fileExtension="." mimeType="text/plain" />
+         </staticContent>
+     </system.webServer>
+ </configuration>`

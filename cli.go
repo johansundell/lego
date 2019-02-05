@@ -110,6 +110,14 @@ func main() {
 			Usage: "Email used for registration and recovery contact.",
 		},
 		cli.StringFlag{
+			Name:  "user",
+			Usage: "Filemaker username",
+		},
+		cli.StringFlag{
+			Name:  "pass",
+			Usage: "FileMaker password",
+		},
+		cli.StringFlag{
 			Name:  "filename",
 			Usage: "Filename of the generated certificate",
 		},
@@ -184,7 +192,25 @@ func main() {
 	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
+	} else {
+		// TODO Our FileMaker stuff here
+
+		// Remove old cert
+
+		// Restart fms
+
+		// copy the priv key to serverKey.pem
+
+		// Change path to FMS\Database server!!!
+
+		// import the fullchain.pem with fmsadmin
+
+		// Restart fms
 	}
+}
+
+func fixFMS() error {
+	return nil
 }
 
 func dnsHelp(_ *cli.Context) error {

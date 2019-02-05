@@ -14,12 +14,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/johansundell/lego/providers/http/webroot"
+	"github.com/johansundell/ssl-for-fms/pkg/fmsadmin"
 	"github.com/urfave/cli"
 	"github.com/xenolf/lego/acme"
 	"github.com/xenolf/lego/log"
 	"github.com/xenolf/lego/providers/dns"
 	"github.com/xenolf/lego/providers/http/memcached"
-	"github.com/xenolf/lego/providers/http/webroot"
 )
 
 func checkFolder(path string) error {
@@ -59,6 +60,17 @@ func setup(c *cli.Context) (*Configuration, *Account, *acme.Client) {
 		log.Fatal("You have to pass an account (email address) to the program using --email or -m")
 	}
 
+	// SUDDE
+	/*
+		if len(c.GlobalString("user")) == 0 {
+			log.Fatal("FileMaker username not set, use the --user to set it")
+		}
+
+		if len(c.GlobalString("pass")) == 0 {
+			log.Fatal("FileMaker password not set, use the --pass to set it")
+		}
+	*/
+
 	// TODO: move to account struct? Currently MUST pass email.
 	acc := NewAccount(c.GlobalString("email"), conf)
 
@@ -77,6 +89,9 @@ func setup(c *cli.Context) (*Configuration, *Account, *acme.Client) {
 	if len(c.GlobalStringSlice("exclude")) > 0 {
 		client.ExcludeChallenges(conf.ExcludedSolvers())
 	}
+
+	fms := fmsadmin.NewConfig()
+	c.GlobalSet("webroot", fms.GetFmsWebRoot())
 
 	if c.GlobalIsSet("webroot") {
 		provider, errO := webroot.NewHTTPProvider(c.GlobalString("webroot"))
@@ -166,6 +181,10 @@ func saveCertRes(certRes *acme.CertificateResource, conf *Configuration) {
 		domainName = conf.context.GlobalString("filename")
 	}
 
+	fms := fmsadmin.NewConfig()
+	// SUDDE
+	//fms.User = conf.context.GlobalString("user")
+	//fms.Pass = conf.context.GlobalString("pass")
 	// We store the certificate, private key and metadata in different files
 	// as web servers would not be able to work with a combined file.
 	certOut := filepath.Join(conf.CertPath(), domainName+".crt")
@@ -198,6 +217,11 @@ func saveCertRes(certRes *acme.CertificateResource, conf *Configuration) {
 			log.Fatalf("Unable to save PrivateKey for domain %s\n\t%v", certRes.Domain, err)
 		}
 
+		err := ioutil.WriteFile(filepath.Join(fms.GetFmsCertDir(), "serverKey.pem"), certRes.PrivateKey, 0644)
+		if err != nil {
+			log.Fatal("Could not save serverKey.pem in the FileMaker directory")
+		}
+
 		if conf.context.GlobalBool("pem") {
 			err = ioutil.WriteFile(pemOut, bytes.Join([][]byte{certRes.Certificate, certRes.PrivateKey}, nil), 0600)
 			if err != nil {
@@ -209,6 +233,37 @@ func saveCertRes(certRes *acme.CertificateResource, conf *Configuration) {
 		fullchain = append(fullchain, certRes.Certificate...)
 		fullchain = append(fullchain, certRes.IssuerCertificate...)
 		ioutil.WriteFile(filepath.Join(conf.CertPath(), "fullchain"+".pem"), fullchain, 0644)
+		if err := ioutil.WriteFile(filepath.Join(fms.GetFmsCertDir(), "fullchain"+".pem"), fullchain, 0644); err != nil {
+			log.Fatal("Could not save the fullchain.pem in the FileMaker directory")
+		}
+
+		// SUDDE
+		//timeout := 1 * time.Minute
+		// More filemaker here
+		/*if _, err := fms.ListFiles(); err != nil {
+			fmt.Println("Restarting the FileMaker service")
+			fms.RestartService()
+			time.Sleep(timeout)
+		}
+		if str, err := fms.DeleteCert(); err != nil {
+			log.Fatal("Could not delete old cert", err, str)
+		}
+		fmt.Println("Restarting FileMaker Server after reseting the cert")
+		fms.RestartService()
+		err = ioutil.WriteFile(filepath.Join(fms.GetFmsCertDir(), "serverKey.pem"), certRes.PrivateKey, 0644)
+		if err != nil {
+			log.Fatal("Could not save serverKey.pem in the FileMaker directory")
+		}
+		time.Sleep(timeout)*/
+		/*
+			fmt.Println("About to install the new cert")
+			if str, err := fms.InstallCert(); err != nil {
+				log.Fatal("Got an error while trying to import the new cert", err, str)
+			}
+			fmt.Println("Restarting the FileMaker server after importing the new cert")
+			fms.RestartService()
+		*/
+		//time.Sleep(timeout)
 
 	} else if conf.context.GlobalBool("pem") {
 		// we don't have the private key; can't write the .pem file
