@@ -61,15 +61,14 @@ func setup(c *cli.Context) (*Configuration, *Account, *acme.Client) {
 	}
 
 	// SUDDE
-	/*
-		if len(c.GlobalString("user")) == 0 {
-			log.Fatal("FileMaker username not set, use the --user to set it")
-		}
+	/*if len(c.GlobalString("user")) == 0 {
+		log.Fatal("FileMaker username not set, use the --user to set it")
+	}
 
-		if len(c.GlobalString("pass")) == 0 {
-			log.Fatal("FileMaker password not set, use the --pass to set it")
-		}
-	*/
+	if len(c.GlobalString("pass")) == 0 {
+		log.Fatal("FileMaker password not set, use the --pass to set it")
+	}*/
+	// TODO: Check we can use the user/pass with fmsadmin
 
 	// TODO: move to account struct? Currently MUST pass email.
 	acc := NewAccount(c.GlobalString("email"), conf)
@@ -90,8 +89,10 @@ func setup(c *cli.Context) (*Configuration, *Account, *acme.Client) {
 		client.ExcludeChallenges(conf.ExcludedSolvers())
 	}
 
-	fms := fmsadmin.NewConfig()
-	c.GlobalSet("webroot", fms.GetFmsWebRoot())
+	if c.GlobalBool("fmsdef") {
+		fms := fmsadmin.NewConfig()
+		c.GlobalSet("webroot", fms.GetFmsWebRoot())
+	}
 
 	if c.GlobalIsSet("webroot") {
 		provider, errO := webroot.NewHTTPProvider(c.GlobalString("webroot"))
@@ -183,8 +184,9 @@ func saveCertRes(certRes *acme.CertificateResource, conf *Configuration) {
 
 	fms := fmsadmin.NewConfig()
 	// SUDDE
-	//fms.User = conf.context.GlobalString("user")
-	//fms.Pass = conf.context.GlobalString("pass")
+	fms.User = conf.context.GlobalString("user")
+	fms.Pass = conf.context.GlobalString("pass")
+
 	// We store the certificate, private key and metadata in different files
 	// as web servers would not be able to work with a combined file.
 	certOut := filepath.Join(conf.CertPath(), domainName+".crt")
@@ -244,25 +246,30 @@ func saveCertRes(certRes *acme.CertificateResource, conf *Configuration) {
 			fmt.Println("Restarting the FileMaker service")
 			fms.RestartService()
 			time.Sleep(timeout)
-		}
-		if str, err := fms.DeleteCert(); err != nil {
+		}*/
+		/*if str, err := fms.DeleteCert(); err != nil {
 			log.Fatal("Could not delete old cert", err, str)
 		}
 		fmt.Println("Restarting FileMaker Server after reseting the cert")
-		fms.RestartService()
-		err = ioutil.WriteFile(filepath.Join(fms.GetFmsCertDir(), "serverKey.pem"), certRes.PrivateKey, 0644)
-		if err != nil {
-			log.Fatal("Could not save serverKey.pem in the FileMaker directory")
-		}
-		time.Sleep(timeout)*/
+		fms.RestartService()*/
 		/*
-			fmt.Println("About to install the new cert")
-			if str, err := fms.InstallCert(); err != nil {
-				log.Fatal("Got an error while trying to import the new cert", err, str)
+			err = ioutil.WriteFile(filepath.Join(fms.GetFmsCertDir(), "serverKey.pem"), certRes.PrivateKey, 0644)
+			if err != nil {
+				log.Fatal("Could not save serverKey.pem in the FileMaker directory")
 			}
-			fmt.Println("Restarting the FileMaker server after importing the new cert")
-			fms.RestartService()
+			time.Sleep(timeout)
 		*/
+		fmt.Println("About to install the new cert")
+		if str, err := fms.InstallCert(); err != nil {
+			log.Fatal("Got an error while trying to import the new cert", err, str)
+		}
+
+		fmt.Println("Closing all filemaker files")
+		fms.CloseFiles()
+
+		fmt.Println("Restarting the FileMaker server after importing the new cert")
+		fms.RestartService()
+
 		//time.Sleep(timeout)
 
 	} else if conf.context.GlobalBool("pem") {

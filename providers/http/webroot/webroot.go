@@ -40,7 +40,7 @@ func (w *HTTPProvider) Present(domain, token, keyAuth string) error {
 	}
 
 	f := filepath.Join(filepath.Dir(challengeFilePath), "web.config")
-	fmt.Println(f, "is the path")
+	//fmt.Println(f, "is the path")
 
 	err = ioutil.WriteFile(f, []byte(webConfig), 0664)
 	if err != nil {

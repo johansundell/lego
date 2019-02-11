@@ -117,6 +117,10 @@ func main() {
 			Name:  "pass",
 			Usage: "FileMaker password",
 		},
+		cli.BoolFlag{
+			Name:  "fmsdef",
+			Usage: "Use the default filemaker webpath",
+		},
 		cli.StringFlag{
 			Name:  "filename",
 			Usage: "Filename of the generated certificate",
