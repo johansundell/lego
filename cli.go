@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	version = "dev"
+	version = "Atatiki 1.2"
 )
 
 func main() {
@@ -27,9 +27,14 @@ func main() {
 	acme.UserAgent = "lego/" + app.Version
 
 	defaultPath := ""
-	cwd, err := os.Getwd()
+	/*cwd, err := os.Getwd()
 	if err == nil {
 		defaultPath = filepath.Join(cwd, ".lego")
+	}*/
+	ex, err := os.Executable()
+	if err == nil {
+		dir, _ := filepath.Split(ex)
+		defaultPath = filepath.Join(dir, ".lego")
 	}
 
 	app.Before = func(c *cli.Context) error {
